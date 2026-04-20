@@ -6,16 +6,20 @@ import { Colors } from '@/constants/theme';
 
 function TabIcon({ Icon, label, focused }: { Icon: React.ElementType; label: string; focused: boolean }) {
   return (
-    <View style={{ alignItems: 'center', gap: 2, paddingTop: 6 }}>
-      {focused && <View style={{ position: 'absolute', top: 1, width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.coral }} />}
-      <Icon size={20} color={focused ? Colors.ink : Colors.gray400} strokeWidth={focused ? 2.5 : 1.8} />
-      <Text style={{
-        fontSize: 9,
-        letterSpacing: 1.1,
-        textTransform: 'uppercase',
-        color: focused ? Colors.ink : Colors.gray400,
-        fontWeight: focused ? '700' : '400',
-      }}>{label}</Text>
+    <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 4 }}>
+      <View style={[
+        { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20, alignItems: 'center', gap: 2 },
+        focused && { backgroundColor: Colors.ink },
+      ]}>
+        <Icon size={18} color={focused ? Colors.white : Colors.gray400} strokeWidth={focused ? 2.5 : 1.8} />
+        <Text style={{
+          fontSize: 9,
+          letterSpacing: 0.8,
+          textTransform: 'uppercase',
+          color: focused ? Colors.white : Colors.gray400,
+          fontWeight: focused ? '700' : '400',
+        }}>{label}</Text>
+      </View>
     </View>
   );
 }

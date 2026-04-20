@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Search, Bell, Clock, ChevronRight, X } from 'lucide-react-native';
+import { Search, Bell, Clock, ChevronRight, X, CheckCircle, MapPin, Sparkles, SlidersHorizontal } from 'lucide-react-native';
 import { Colors, Font, Radius, SportEmoji, MicroStyle, SportColors } from '@/constants/theme';
 import { useStore } from '@/store/useStore';
 
@@ -223,110 +223,179 @@ const LEADERBOARD = [
 ];
 const RANK_COLORS: Record<number, string> = { 1: '#D4A017', 2: '#8E8E93', 3: '#CD7F32' };
 
-const SPORT_FILTERS_FRIENDS = ['All', 'Basketball', 'Soccer', 'Tennis', 'Volleyball', 'Running'];
-
 function FriendsSubTab({ searchQuery }: { searchQuery: string }) {
   const { allPlayers } = useStore();
-  const [sportFilter, setSportFilter] = useState('All');
 
-  const filtered = allPlayers.filter(p => {
-    const matchSport = sportFilter === 'All' || p.sports.some(sp => sp.name === sportFilter);
-    const matchSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.location.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchSport && matchSearch;
-  });
+  const filtered = allPlayers.filter(p =>
+    !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <>
-      {/* Sport filter chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
-        {SPORT_FILTERS_FRIENDS.map(sp => {
-          const on = sportFilter === sp;
-          const color = SportColors[sp];
-          return (
-            <TouchableOpacity key={sp} onPress={() => setSportFilter(sp)}
-              style={[s.sportFilterChip, on && { backgroundColor: color ?? Colors.ink, borderColor: color ?? Colors.ink }]}>
-              <Text style={[s.sportFilterTxt, on && { color: Colors.white }]}>{sp}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      {/* Nearby section */}
-      <View style={s.sectionRow}>
-        <Micro>PEOPLE NEAR YOU</Micro>
-        <Text style={s.link}>See all</Text>
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
-        {allPlayers.slice(0, 5).map((u) => (
-          <TouchableOpacity key={u.id} style={s.discCard} onPress={() => router.push(`/player/${u.id}` as any)}>
-            <View style={{ position: 'relative', marginBottom: 6 }}>
-              <Avatar uri={u.avatar} size={56} />
-              {u.online && <View style={s.onlineDot} />}
-            </View>
-            <Text style={s.discName}>{u.name}</Text>
-            <Text style={s.discSub}>{u.compatibility ?? 85}%</Text>
-            <Text style={s.discSport}>{u.sports[0].name}</Text>
-            <View style={s.followBtn}><Text style={s.followBtnTxt}>+ Follow</Text></View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Friends grid */}
+      {/* Friends list */}
       <View style={s.sectionRow}>
         <Micro>YOUR FRIENDS · {filtered.length}</Micro>
       </View>
       {filtered.length === 0 ? (
         <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-          <Text style={{ fontSize: 13, color: Colors.gray500 }}>No friends match this filter</Text>
+          <Text style={{ fontSize: 13, color: Colors.gray500 }}>No friends match</Text>
         </View>
       ) : (
-        <View style={s.grid}>
-          {filtered.map((f) => (
-            <TouchableOpacity key={f.id} style={s.friendCard} onPress={() => router.push(`/player/${f.id}` as any)}>
-              <View style={{ position: 'relative', marginBottom: 6 }}>
-                <Avatar uri={f.avatar} size={52} />
-                {f.online && <View style={s.onlineDot} />}
+        filtered.map((f) => (
+          <TouchableOpacity key={f.id} style={s.friendRow} onPress={() => router.push(`/player/${f.id}` as any)} activeOpacity={0.8}>
+            <View style={{ position: 'relative' }}>
+              <Avatar uri={f.avatar} size={46} />
+              {f.online && <View style={s.onlineDot} />}
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 2 }}>
+                <Text style={s.friendName}>{f.name}</Text>
+                {f.verified && <CheckCircle size={11} color={Colors.coral} fill={Colors.coral} />}
               </View>
-              <Text style={s.friendName} numberOfLines={1}>{f.name}</Text>
-              <Text style={s.friendSports} numberOfLines={1}>{f.sports.map(sp => sp.name).join(' · ')}</Text>
+              <Text style={s.friendSports}>{f.sports.map(sp => sp.name).join(' · ')}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <MapPin size={9} color={Colors.gray400} strokeWidth={1.8} />
+                <Text style={s.friendMeta}>{f.location} · {f.gamesPlayed} games</Text>
+              </View>
+            </View>
+            <View style={{ alignItems: 'flex-end', gap: 8 }}>
               <View style={s.compatPill}>
-                <Text style={s.compatTxt}>{f.compatibility ?? 80}% match</Text>
+                <Text style={s.compatTxt}>{f.compatibility ?? 80}%</Text>
               </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+              <TouchableOpacity style={s.followBtnSm}>
+                <Text style={s.followBtnSmTxt}>Following</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        ))
       )}
     </>
   );
 }
 
-function LeaderboardSubTab() {
+function DiscoverSubTab({ searchQuery }: { searchQuery: string }) {
   const { allPlayers } = useStore();
+  const list = allPlayers.filter(u =>
+    !searchQuery || u.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <View style={[s.leaderCard, { marginHorizontal: 20 }]}>
-      <View style={s.leaderHead}>
-        <Text style={s.leaderTitle}>Top players</Text>
-        <View style={s.leaderBadge}><Text style={s.leaderBadgeTxt}>APRIL</Text></View>
+    <>
+      {/* Nearby horizontal strip */}
+      <View style={s.sectionRow}>
+        <Micro>NEARBY NOW</Micro>
+        <Text style={s.link}>Map view</Text>
       </View>
-      {LEADERBOARD.map((row, i) => {
-        const user = allPlayers.find((u) => u.id === row.userId);
-        const isYou = (row as any).isYou as boolean;
-        return (
-          <TouchableOpacity
-            key={row.userId}
-            style={[s.leaderRow, { backgroundColor: isYou ? Colors.coralSoft : Colors.white }, i < LEADERBOARD.length - 1 && { borderBottomWidth: 1, borderBottomColor: Colors.gray150 }]}
-            onPress={() => !isYou && router.push(`/player/${row.userId}` as any)}
-          >
-            <Text style={[s.leaderRank, { color: RANK_COLORS[row.rank] ?? Colors.gray500 }]}>{row.rank}</Text>
-            <Avatar uri={user?.avatar ?? 'https://i.pravatar.cc/200?img=8'} size={36} />
-            <View style={{ flex: 1 }}>
-              <Text style={s.leaderName}>{isYou ? 'You' : user?.name}</Text>
-              <Text style={s.leaderSub}>{row.games} games · {row.rating} ★</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}>
+        {allPlayers.filter(u => u.online).map((u) => (
+          <TouchableOpacity key={u.id} style={s.nearbyCard} onPress={() => router.push(`/player/${u.id}` as any)}>
+            <View style={{ position: 'relative', marginBottom: 6 }}>
+              <Avatar uri={u.avatar} size={52} />
+              <View style={s.onlineDot} />
             </View>
-            <Text style={[s.leaderScore, { color: isYou ? Colors.coral : Colors.ink }]}>{row.score.toLocaleString()}</Text>
+            <Text style={s.nearbyName}>{u.name.split(' ')[0]}</Text>
+            <View style={s.nearbyCompat}>
+              <Text style={s.nearbyCompatTxt}>{u.compatibility ?? 80}%</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Discover list */}
+      <View style={s.sectionRow}>
+        <Micro>SUGGESTED FOR YOU · {list.length}</Micro>
+      </View>
+      {list.map((u) => {
+        const color = SportColors[u.sports[0]?.name] ?? Colors.coral;
+        return (
+          <TouchableOpacity key={u.id} style={s.discoverRow} onPress={() => router.push(`/player/${u.id}` as any)} activeOpacity={0.8}>
+            <View style={{ position: 'relative' }}>
+              <Avatar uri={u.avatar} size={50} />
+              {u.online && <View style={s.onlineDot} />}
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 2 }}>
+                <Text style={s.discoverName}>{u.name}</Text>
+                {u.verified && <CheckCircle size={11} color={Colors.coral} fill={Colors.coral} />}
+              </View>
+              <Text style={s.discoverSports}>{u.sports.map(sp => sp.name).join(' · ')}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <MapPin size={9} color={Colors.gray400} strokeWidth={1.8} />
+                <Text style={s.discoverMeta}>{u.location} · {u.gamesPlayed} games · {u.rating} ★</Text>
+              </View>
+            </View>
+            <View style={{ alignItems: 'flex-end', gap: 8 }}>
+              <View style={[s.compatBadge, { backgroundColor: color + '18' }]}>
+                <Sparkles size={8} color={color} />
+                <Text style={[s.compatBadgeTxt, { color }]}>{u.compatibility ?? 80}%</Text>
+              </View>
+              <TouchableOpacity style={s.followBtn}>
+                <Text style={s.followBtnTxt}>+ Follow</Text>
+              </TouchableOpacity>
+            </View>
           </TouchableOpacity>
         );
       })}
+    </>
+  );
+}
+
+function PodiumPeg({ row, pedHeight, allPlayers }: { row: typeof LEADERBOARD[0]; pedHeight: number; allPlayers: any[] }) {
+  const user = allPlayers.find((u: any) => u.id === row.userId);
+  const c = RANK_COLORS[row.rank] ?? Colors.gray400;
+  const avSize = row.rank === 1 ? 64 : 52;
+  return (
+    <View style={{ alignItems: 'center', flex: 1 }}>
+      <Image source={{ uri: user?.avatar ?? '' }} style={{ width: avSize, height: avSize, borderRadius: avSize / 2, borderWidth: 3, borderColor: c, backgroundColor: Colors.gray200 }} contentFit="cover" />
+      <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.ink, marginTop: 6, textAlign: 'center' }} numberOfLines={1}>{user?.name?.split(' ')[0]}</Text>
+      <Text style={{ fontSize: 10, color: Colors.gray500, marginBottom: 8 }}>{row.score.toLocaleString()}</Text>
+      <View style={{ width: '90%', height: pedHeight, backgroundColor: c + '22', borderTopLeftRadius: 8, borderTopRightRadius: 8, borderTopWidth: 2.5, borderTopColor: c, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontSize: row.rank === 1 ? 22 : 17, fontWeight: '800', color: c }}>#{row.rank}</Text>
+      </View>
+    </View>
+  );
+}
+
+function LeaderboardSubTab() {
+  const { allPlayers } = useStore();
+  const top3 = LEADERBOARD.slice(0, 3);
+  const rest = LEADERBOARD.slice(3);
+
+  return (
+    <View style={{ paddingHorizontal: 20 }}>
+      {/* Header */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <Text style={{ fontSize: 22, fontWeight: '800', color: Colors.ink }}>Top players</Text>
+        <View style={s.leaderBadge}><Text style={s.leaderBadgeTxt}>APRIL</Text></View>
+      </View>
+
+      {/* Podium: 2nd left, 1st center, 3rd right */}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 0 }}>
+        <PodiumPeg row={top3[1]} pedHeight={84} allPlayers={allPlayers} />
+        <PodiumPeg row={top3[0]} pedHeight={116} allPlayers={allPlayers} />
+        <PodiumPeg row={top3[2]} pedHeight={60} allPlayers={allPlayers} />
+      </View>
+
+      {/* Rest of list */}
+      <View style={[s.leaderCard, { marginTop: 12 }]}>
+        {rest.map((row, i) => {
+          const user = allPlayers.find((u: any) => u.id === row.userId);
+          const isYou = (row as any).isYou as boolean;
+          return (
+            <TouchableOpacity key={row.userId}
+              style={[s.leaderRow, { backgroundColor: isYou ? Colors.coralSoft : Colors.white }, i < rest.length - 1 && { borderBottomWidth: 1, borderBottomColor: Colors.gray150 }]}
+              onPress={() => !isYou && router.push(`/player/${row.userId}` as any)}>
+              <Text style={[s.leaderRank, { color: Colors.gray500 }]}>{row.rank}</Text>
+              <Avatar uri={user?.avatar ?? 'https://i.pravatar.cc/200?img=8'} size={36} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.leaderName}>{isYou ? 'You' : user?.name}</Text>
+                <Text style={s.leaderSub}>{row.games} games · {row.rating} ★</Text>
+              </View>
+              <Text style={[s.leaderScore, { color: isYou ? Colors.coral : Colors.ink }]}>{row.score.toLocaleString()}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -370,26 +439,7 @@ function FriendsTab() {
       </View>
 
       {sub === 'friends' && <FriendsSubTab searchQuery={search} />}
-      {sub === 'discover' && (
-        <View style={[s.grid, { paddingHorizontal: 20, paddingTop: 16 }]}>
-          {allPlayers
-            .filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()))
-            .map((u) => (
-              <TouchableOpacity key={u.id} style={s.friendCard} onPress={() => router.push(`/player/${u.id}` as any)}>
-                <View style={{ position: 'relative', marginBottom: 6 }}>
-                  <Avatar uri={u.avatar} size={52} />
-                  {u.online && <View style={s.onlineDot} />}
-                </View>
-                <Text style={s.friendName} numberOfLines={1}>{u.name}</Text>
-                <Text style={s.friendSports} numberOfLines={1}>{u.sports[0].name}</Text>
-                <View style={{ marginTop: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 999, backgroundColor: Colors.coralSoft }}>
-                  <Text style={{ fontSize: 9, fontWeight: '700', color: Colors.coral }}>{u.compatibility ?? 80}% match</Text>
-                </View>
-                <View style={[s.followBtn, { marginTop: 6 }]}><Text style={s.followBtnTxt}>+ Follow</Text></View>
-              </TouchableOpacity>
-            ))}
-        </View>
-      )}
+      {sub === 'discover' && <DiscoverSubTab searchQuery={search} />}
       {sub === 'leaderboard' && <LeaderboardSubTab />}
     </>
   );
@@ -511,35 +561,42 @@ const s = StyleSheet.create({
   innerTabActive: { color: Colors.ink, fontWeight: '600' },
   innerUnderline: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, backgroundColor: Colors.ink },
 
-  discCard: { width: 120, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 20, padding: 12, alignItems: 'center' },
-  discName: { fontSize: 12, fontWeight: '700', color: Colors.ink, textAlign: 'center' },
-  discSub: { fontSize: 10, fontWeight: '700', color: Colors.coral, textAlign: 'center' },
-  discSport: { fontSize: 10, color: Colors.gray500, textAlign: 'center', marginBottom: 6 },
-
   friendSearchRow: { paddingHorizontal: 20, marginBottom: 12 },
   friendSearchBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 14, height: 42, paddingHorizontal: 12 },
   friendSearchPlaceholder: { fontSize: 13, color: Colors.gray400 },
   friendSearchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.coral + '60', borderRadius: 14, height: 42, paddingHorizontal: 12 },
   friendSearchInput: { flex: 1, fontSize: 13, color: Colors.ink },
 
-  sportFilterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
-  sportFilterTxt: { fontSize: 12, fontWeight: '600', color: Colors.gray600 },
+  // Friends list row
+  friendRow: { marginHorizontal: 20, marginBottom: 10, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 18, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  onlineDot: { position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: 6, backgroundColor: Colors.green, borderWidth: 2, borderColor: Colors.white },
+  friendName: { fontSize: 14, fontWeight: '700', color: Colors.ink },
+  friendSports: { fontSize: 11, color: Colors.gray500 },
+  friendMeta: { fontSize: 10, color: Colors.gray400 },
+  compatPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: Colors.coralSoft },
+  compatTxt: { fontSize: 10, fontWeight: '800', color: Colors.coral },
+  followBtnSm: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
+  followBtnSmTxt: { fontSize: 10, fontWeight: '600', color: Colors.gray600 },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 20 },
-  friendCard: { flex: 1, minWidth: '44%', backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 20, padding: 14, alignItems: 'center' },
-  onlineDot: { position: 'absolute', bottom: 0, right: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: Colors.green, borderWidth: 2, borderColor: Colors.white },
-  friendName: { fontSize: 13, fontWeight: '600', color: Colors.ink, textAlign: 'center' },
-  friendSports: { fontSize: 10, color: Colors.gray500, textAlign: 'center', marginTop: 2 },
-  compatPill: { marginTop: 6, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: Colors.coralSoft },
-  compatTxt: { fontSize: 10, fontWeight: '700', color: Colors.coral },
-  followBtn: { width: '100%', backgroundColor: Colors.ink, borderRadius: 10, paddingVertical: 6, alignItems: 'center' },
+  // Nearby strip
+  nearbyCard: { width: 80, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 18, padding: 10, alignItems: 'center' },
+  nearbyName: { fontSize: 10, fontWeight: '700', color: Colors.ink, textAlign: 'center', marginBottom: 4 },
+  nearbyCompat: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 999, backgroundColor: Colors.coralSoft },
+  nearbyCompatTxt: { fontSize: 9, fontWeight: '800', color: Colors.coral },
+
+  // Discover list
+  discoverRow: { marginHorizontal: 20, marginBottom: 10, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 18, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  discoverName: { fontSize: 14, fontWeight: '700', color: Colors.ink },
+  discoverSports: { fontSize: 11, color: Colors.gray500 },
+  discoverMeta: { fontSize: 10, color: Colors.gray400 },
+  compatBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  compatBadgeTxt: { fontSize: 11, fontWeight: '800' },
+  followBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: Colors.ink },
   followBtnTxt: { fontSize: 11, fontWeight: '700', color: Colors.white },
 
   leaderCard: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.card, overflow: 'hidden' },
-  leaderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: Colors.ink, paddingHorizontal: 16, paddingVertical: 14 },
-  leaderTitle: { fontSize: 20, fontWeight: '700', color: Colors.white },
-  leaderBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.1)' },
-  leaderBadgeTxt: { fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: Colors.white },
+  leaderBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: Colors.gray100 },
+  leaderBadgeTxt: { fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: Colors.gray500, fontWeight: '700' },
   leaderRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
   leaderRank: { fontWeight: '700', fontSize: 12, width: 22 },
   leaderName: { fontSize: 13, fontWeight: '500', color: Colors.ink },
