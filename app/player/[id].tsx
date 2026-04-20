@@ -96,7 +96,7 @@ export default function PlayerProfileScreen() {
           { val: `${user.showUpRate}%`, label: 'SHOW-UP', italic: false },
         ].map((st, i) => (
           <View key={st.label} style={[s.statCell, i > 0 && s.statCellBorder]}>
-            <Text style={[s.statVal, st.italic && { color: Colors.coral, fontFamily: Font.displayItalic }]}>{st.val}</Text>
+            <Text style={[s.statVal, st.italic && { color: Colors.coral, fontStyle: 'italic' }]}>{st.val}</Text>
             <Micro>{st.label}</Micro>
           </View>
         ))}
@@ -158,7 +158,7 @@ const s = StyleSheet.create({
   hero: { alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20 },
   avatar: { width: 96, height: 96, borderRadius: 48, borderWidth: 3, borderColor: Colors.white, backgroundColor: Colors.gray200 },
   verifiedBadge: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.coral, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: Colors.bg },
-  name: { fontFamily: Font.display, fontSize: 28, color: Colors.ink, letterSpacing: -0.5, marginBottom: 2 },
+  name: { fontSize: 28, fontWeight: '800', color: Colors.ink, letterSpacing: -0.5, marginBottom: 2 },
   handle: { fontSize: 11, color: Colors.gray500, marginBottom: 6, letterSpacing: 0.5 },
   location: { fontSize: 12, color: Colors.gray600 },
   ctaBtn: { paddingVertical: 12, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
@@ -169,13 +169,13 @@ const s = StyleSheet.create({
   aiCircle2: { position: 'absolute', top: -25, right: -25, width: 100, height: 100, borderRadius: 50, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   aiTag: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'flex-start' },
   aiInsight: { fontSize: 12, color: 'rgba(255,255,255,0.95)', lineHeight: 18, flex: 1, marginRight: 12 },
-  aiScore: { fontFamily: Font.display, fontSize: 42, color: Colors.white, lineHeight: 44 },
+  aiScore: { fontSize: 42, fontWeight: '800', color: Colors.white, lineHeight: 44 },
   aiPct: { fontSize: 20, color: 'rgba(255,255,255,0.7)', marginTop: -4 },
 
   statsCard: { marginHorizontal: 20, marginBottom: 20, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 20, padding: 16, flexDirection: 'row' },
   statCell: { flex: 1, alignItems: 'center' },
   statCellBorder: { borderLeftWidth: 1, borderLeftColor: Colors.border },
-  statVal: { fontFamily: Font.display, fontSize: 24, color: Colors.ink, lineHeight: 28, marginBottom: 2 },
+  statVal: { fontSize: 24, fontWeight: '700', color: Colors.ink, lineHeight: 28, marginBottom: 2 },
 
   sportChip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 12 },
   sportChipName: { fontSize: 12, fontWeight: '500', color: Colors.ink },

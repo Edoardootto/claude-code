@@ -57,7 +57,7 @@ export default function GameDetailScreen() {
           {/* Title */}
           <Text style={s.heroTitle}>
             {game.title.split(' ').slice(0, -1).join(' ') + ' '}
-            <Text style={[s.heroTitle, { fontFamily: Font.displayItalic, color: Colors.coralDim }]}>
+            <Text style={[s.heroTitle, { fontStyle: 'italic', color: Colors.coralDim }]}>
               {game.title.split(' ').pop()}
             </Text>
           </Text>
@@ -184,7 +184,7 @@ const s = StyleSheet.create({
   topRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   iconBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
   sportTag: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: 'rgba(255,90,78,0.2)', borderWidth: 1, borderColor: 'rgba(255,90,78,0.3)', alignSelf: 'flex-start', marginBottom: 12 },
-  heroTitle: { fontFamily: Font.display, fontSize: 32, color: Colors.white, lineHeight: 38, letterSpacing: -0.5, marginBottom: 12 },
+  heroTitle: { fontSize: 32, fontWeight: '800', color: Colors.white, lineHeight: 38, letterSpacing: -0.5, marginBottom: 12 },
 
   infoGrid: { marginHorizontal: 16, marginTop: -20, backgroundColor: Colors.white, borderRadius: Radius.card, borderWidth: 1, borderColor: Colors.border, padding: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 14, zIndex: 10 },
   infoCell: { width: '45%', flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
@@ -196,7 +196,7 @@ const s = StyleSheet.create({
 
   weatherCard: { marginHorizontal: 20, marginTop: 16, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 18, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 14 },
   weatherIcon: { width: 46, height: 46, borderRadius: 14, backgroundColor: '#FFE4A0', alignItems: 'center', justifyContent: 'center' },
-  weatherTemp: { fontFamily: Font.display, fontSize: 22, color: Colors.ink },
+  weatherTemp: { fontSize: 22, fontWeight: '700', color: Colors.ink },
   weatherStats: { borderLeftWidth: 1, borderLeftColor: Colors.border, paddingLeft: 14, gap: 6 },
 
   playersGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 20 },

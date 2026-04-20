@@ -1,4 +1,4 @@
-import { TextStyle } from 'react-native';
+import { Platform, TextStyle } from 'react-native';
 
 export const Colors = {
   coral:      '#FF5A4E',
@@ -59,8 +59,8 @@ export const Radius = {
 };
 
 export const Font = {
-  display:       'InstrumentSerif_400Regular',
-  displayItalic: 'InstrumentSerif_400Regular_Italic',
+  display:       Platform.select({ ios: undefined, android: undefined }) as unknown as string,
+  displayItalic: Platform.select({ ios: undefined, android: undefined }) as unknown as string,
 };
 
 export const MicroStyle: TextStyle = {

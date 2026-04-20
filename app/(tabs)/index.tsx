@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, SafeAreaView,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, SafeAreaView, TextInput,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Search, Bell, Clock, ChevronRight } from 'lucide-react-native';
-import { Colors, Font, Radius, SportEmoji, MicroStyle } from '@/constants/theme';
+import { Search, Bell, Clock, ChevronRight, X } from 'lucide-react-native';
+import { Colors, Font, Radius, SportEmoji, MicroStyle, SportColors } from '@/constants/theme';
 import { useStore } from '@/store/useStore';
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ function StreakCard() {
       <Micro style={{ color: Colors.coralDim, letterSpacing: 1.4, marginBottom: 6 }}>WEEKLY STREAK</Micro>
       <Text style={s.streakHeading}>
         {"You're on a "}
-        <Text style={[s.streakHeading, { fontFamily: Font.displayItalic, color: '#FFE8E5' }]}>7-game</Text>
+        <Text style={[s.streakHeading, { fontStyle: 'italic', color: '#FFE8E5' }]}>7-game</Text>
         {" roll"}
       </Text>
       <View style={s.statRow}>
@@ -223,45 +223,79 @@ const LEADERBOARD = [
 ];
 const RANK_COLORS: Record<number, string> = { 1: '#D4A017', 2: '#8E8E93', 3: '#CD7F32' };
 
-function FriendsSubTab() {
+const SPORT_FILTERS_FRIENDS = ['All', 'Basketball', 'Soccer', 'Tennis', 'Volleyball', 'Running'];
+
+function FriendsSubTab({ searchQuery }: { searchQuery: string }) {
   const { allPlayers } = useStore();
-  const friends = allPlayers.slice(0, 4);
-  const discover = allPlayers.slice(0, 4);
+  const [sportFilter, setSportFilter] = useState('All');
+
+  const filtered = allPlayers.filter(p => {
+    const matchSport = sportFilter === 'All' || p.sports.some(sp => sp.name === sportFilter);
+    const matchSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.location.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchSport && matchSearch;
+  });
+
   return (
     <>
+      {/* Sport filter chips */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
+        {SPORT_FILTERS_FRIENDS.map(sp => {
+          const on = sportFilter === sp;
+          const color = SportColors[sp];
+          return (
+            <TouchableOpacity key={sp} onPress={() => setSportFilter(sp)}
+              style={[s.sportFilterChip, on && { backgroundColor: color ?? Colors.ink, borderColor: color ?? Colors.ink }]}>
+              <Text style={[s.sportFilterTxt, on && { color: Colors.white }]}>{sp}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Nearby section */}
       <View style={s.sectionRow}>
         <Micro>PEOPLE NEAR YOU</Micro>
         <Text style={s.link}>See all</Text>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
-        {discover.map((u) => (
+        {allPlayers.slice(0, 5).map((u) => (
           <TouchableOpacity key={u.id} style={s.discCard} onPress={() => router.push(`/player/${u.id}` as any)}>
-            <Avatar uri={u.avatar} size={60} style={{ marginBottom: 6 }} />
+            <View style={{ position: 'relative', marginBottom: 6 }}>
+              <Avatar uri={u.avatar} size={56} />
+              {u.online && <View style={s.onlineDot} />}
+            </View>
             <Text style={s.discName}>{u.name}</Text>
-            <Text style={s.discSub}>{u.compatibility ?? 85}% · {u.sports[0].name}</Text>
+            <Text style={s.discSub}>{u.compatibility ?? 85}%</Text>
+            <Text style={s.discSport}>{u.sports[0].name}</Text>
             <View style={s.followBtn}><Text style={s.followBtnTxt}>+ Follow</Text></View>
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      {/* Friends grid */}
       <View style={s.sectionRow}>
-        <Micro>YOUR FRIENDS · 24</Micro>
-        <Text style={s.link}>Sort</Text>
+        <Micro>YOUR FRIENDS · {filtered.length}</Micro>
       </View>
-      <View style={s.grid}>
-        {friends.map((f) => (
-          <TouchableOpacity key={f.id} style={s.friendCard} onPress={() => router.push(`/player/${f.id}` as any)}>
-            <View style={{ position: 'relative', marginBottom: 6 }}>
-              <Avatar uri={f.avatar} size={56} />
-              {f.online && <View style={s.onlineDot} />}
-            </View>
-            <Text style={s.friendName}>{f.name}</Text>
-            <Text style={s.friendSports}>{f.sports.map((sp) => sp.name).join(' · ')}</Text>
-            <View style={s.compatPill}>
-              <Text style={s.compatTxt}>{f.compatibility ?? 80}% match</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {filtered.length === 0 ? (
+        <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+          <Text style={{ fontSize: 13, color: Colors.gray500 }}>No friends match this filter</Text>
+        </View>
+      ) : (
+        <View style={s.grid}>
+          {filtered.map((f) => (
+            <TouchableOpacity key={f.id} style={s.friendCard} onPress={() => router.push(`/player/${f.id}` as any)}>
+              <View style={{ position: 'relative', marginBottom: 6 }}>
+                <Avatar uri={f.avatar} size={52} />
+                {f.online && <View style={s.onlineDot} />}
+              </View>
+              <Text style={s.friendName} numberOfLines={1}>{f.name}</Text>
+              <Text style={s.friendSports} numberOfLines={1}>{f.sports.map(sp => sp.name).join(' · ')}</Text>
+              <View style={s.compatPill}>
+                <Text style={s.compatTxt}>{f.compatibility ?? 80}% match</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </>
   );
 }
@@ -299,30 +333,61 @@ function LeaderboardSubTab() {
 
 function FriendsTab() {
   const [sub, setSub] = useState<'friends' | 'discover' | 'leaderboard'>('friends');
+  const [search, setSearch] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
   const { allPlayers } = useStore();
+
   return (
     <>
+      {/* Search bar */}
+      <View style={s.friendSearchRow}>
+        {showSearch ? (
+          <View style={s.friendSearchBar}>
+            <Search size={14} color={Colors.gray400} strokeWidth={2} />
+            <TextInput style={s.friendSearchInput} placeholder="Search people..." placeholderTextColor={Colors.gray400} value={search} onChangeText={setSearch} autoFocus />
+            <TouchableOpacity onPress={() => { setShowSearch(false); setSearch(''); }}>
+              <X size={14} color={Colors.gray400} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity style={s.friendSearchBtn} onPress={() => setShowSearch(true)}>
+            <Search size={15} color={Colors.gray600} strokeWidth={1.8} />
+            <Text style={s.friendSearchPlaceholder}>Search friends, players...</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Sub tabs */}
       <View style={s.innerBar}>
         {(['friends', 'discover', 'leaderboard'] as const).map((t) => (
           <TouchableOpacity key={t} onPress={() => setSub(t)} style={s.innerTabItem}>
             <Text style={[s.innerTabTxt, sub === t && s.innerTabActive]}>
-              {t === 'friends' ? 'Friends · 24' : t.charAt(0).toUpperCase() + t.slice(1)}
+              {t === 'friends' ? 'Friends' : t.charAt(0).toUpperCase() + t.slice(1)}
             </Text>
             {sub === t && <View style={s.innerUnderline} />}
           </TouchableOpacity>
         ))}
       </View>
-      {sub === 'friends' && <FriendsSubTab />}
+
+      {sub === 'friends' && <FriendsSubTab searchQuery={search} />}
       {sub === 'discover' && (
         <View style={[s.grid, { paddingHorizontal: 20, paddingTop: 16 }]}>
-          {allPlayers.map((u) => (
-            <TouchableOpacity key={u.id} style={s.friendCard} onPress={() => router.push(`/player/${u.id}` as any)}>
-              <Avatar uri={u.avatar} size={56} style={{ marginBottom: 6 }} />
-              <Text style={s.friendName}>{u.name}</Text>
-              <Text style={s.friendSports}>{u.sports[0].name}</Text>
-              <View style={[s.followBtn, { marginTop: 6 }]}><Text style={s.followBtnTxt}>+ Follow</Text></View>
-            </TouchableOpacity>
-          ))}
+          {allPlayers
+            .filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()))
+            .map((u) => (
+              <TouchableOpacity key={u.id} style={s.friendCard} onPress={() => router.push(`/player/${u.id}` as any)}>
+                <View style={{ position: 'relative', marginBottom: 6 }}>
+                  <Avatar uri={u.avatar} size={52} />
+                  {u.online && <View style={s.onlineDot} />}
+                </View>
+                <Text style={s.friendName} numberOfLines={1}>{u.name}</Text>
+                <Text style={s.friendSports} numberOfLines={1}>{u.sports[0].name}</Text>
+                <View style={{ marginTop: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 999, backgroundColor: Colors.coralSoft }}>
+                  <Text style={{ fontSize: 9, fontWeight: '700', color: Colors.coral }}>{u.compatibility ?? 80}% match</Text>
+                </View>
+                <View style={[s.followBtn, { marginTop: 6 }]}><Text style={s.followBtnTxt}>+ Follow</Text></View>
+              </TouchableOpacity>
+            ))}
         </View>
       )}
       {sub === 'leaderboard' && <LeaderboardSubTab />}
@@ -385,7 +450,7 @@ const s = StyleSheet.create({
   micro: { ...MicroStyle } as any,
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
-  greeting: { fontFamily: Font.display, fontSize: 26, color: Colors.ink, letterSpacing: -0.5 },
+  greeting: { fontSize: 28, fontWeight: '800', color: Colors.ink, letterSpacing: -0.6 },
   iconBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
   notifDot: { position: 'absolute', top: 8, right: 8, width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.coral },
 
@@ -398,18 +463,18 @@ const s = StyleSheet.create({
 
   streakCard: { backgroundColor: Colors.ink, borderRadius: 28, padding: 24, overflow: 'hidden' },
   streakBlob: { position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,90,78,0.35)' },
-  streakHeading: { fontFamily: Font.display, fontSize: 28, color: Colors.white, marginBottom: 20, lineHeight: 34 },
+  streakHeading: { fontSize: 26, fontWeight: '700', color: Colors.white, marginBottom: 20, lineHeight: 32 },
   statRow: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 16 },
   statCell: { flex: 1 },
   statCellBorder: { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.15)', paddingLeft: 16 },
-  statVal: { fontFamily: Font.display, fontSize: 26, color: Colors.white, lineHeight: 30, marginBottom: 2 },
+  statVal: { fontSize: 26, fontWeight: '700', color: Colors.white, lineHeight: 30, marginBottom: 2 },
 
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
   link: { fontSize: 12, fontWeight: '600', color: Colors.coral },
 
   gameCard: { marginHorizontal: 20, marginBottom: 12, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.card, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14 },
   dateChip: { width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  dateDay: { fontFamily: Font.display, fontSize: 22, color: Colors.ink, lineHeight: 24 },
+  dateDay: { fontSize: 22, fontWeight: '800', color: Colors.ink, lineHeight: 24 },
   gameTitle: { fontSize: 15, fontWeight: '600', color: Colors.ink, letterSpacing: -0.15 },
   gameMeta: { fontSize: 11, color: Colors.gray500 },
   spotPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -422,7 +487,7 @@ const s = StyleSheet.create({
   actTime: { fontSize: 11, color: Colors.gray500, marginTop: 2 },
 
   repCard: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.card, padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  repNum: { fontFamily: Font.display, fontSize: 44, color: Colors.ink, lineHeight: 48 },
+  repNum: { fontSize: 44, fontWeight: '800', color: Colors.ink, lineHeight: 48 },
   repSub: { fontSize: 11, color: Colors.gray500, marginTop: 2 },
   repStat: { fontSize: 13, fontWeight: '500', color: Colors.ink },
 
@@ -446,9 +511,19 @@ const s = StyleSheet.create({
   innerTabActive: { color: Colors.ink, fontWeight: '600' },
   innerUnderline: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, backgroundColor: Colors.ink },
 
-  discCard: { width: 150, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 20, padding: 14, alignItems: 'center' },
-  discName: { fontSize: 13, fontWeight: '600', color: Colors.ink, textAlign: 'center' },
-  discSub: { fontSize: 10, color: Colors.gray500, textAlign: 'center', marginBottom: 8 },
+  discCard: { width: 120, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 20, padding: 12, alignItems: 'center' },
+  discName: { fontSize: 12, fontWeight: '700', color: Colors.ink, textAlign: 'center' },
+  discSub: { fontSize: 10, fontWeight: '700', color: Colors.coral, textAlign: 'center' },
+  discSport: { fontSize: 10, color: Colors.gray500, textAlign: 'center', marginBottom: 6 },
+
+  friendSearchRow: { paddingHorizontal: 20, marginBottom: 12 },
+  friendSearchBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 14, height: 42, paddingHorizontal: 12 },
+  friendSearchPlaceholder: { fontSize: 13, color: Colors.gray400 },
+  friendSearchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.coral + '60', borderRadius: 14, height: 42, paddingHorizontal: 12 },
+  friendSearchInput: { flex: 1, fontSize: 13, color: Colors.ink },
+
+  sportFilterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
+  sportFilterTxt: { fontSize: 12, fontWeight: '600', color: Colors.gray600 },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 20 },
   friendCard: { flex: 1, minWidth: '44%', backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 20, padding: 14, alignItems: 'center' },
@@ -462,7 +537,7 @@ const s = StyleSheet.create({
 
   leaderCard: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.card, overflow: 'hidden' },
   leaderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: Colors.ink, paddingHorizontal: 16, paddingVertical: 14 },
-  leaderTitle: { fontFamily: Font.display, fontSize: 20, color: Colors.white },
+  leaderTitle: { fontSize: 20, fontWeight: '700', color: Colors.white },
   leaderBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.1)' },
   leaderBadgeTxt: { fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: Colors.white },
   leaderRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 },

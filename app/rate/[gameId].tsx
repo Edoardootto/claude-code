@@ -63,7 +63,7 @@ export default function RateGameScreen() {
   if (!pending) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bg }}>
-        <Text style={{ color: Colors.gray500, fontFamily: Font.display, fontSize: 20 }}>No pending ratings</Text>
+        <Text style={{ color: Colors.gray500, fontSize: 20, fontWeight: '600' }}>No pending ratings</Text>
         <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
           <Text style={{ color: Colors.coral, fontWeight: '600' }}>← Go back</Text>
         </TouchableOpacity>
@@ -91,7 +91,7 @@ export default function RateGameScreen() {
         <View style={{ alignItems: 'center', paddingHorizontal: 24, marginBottom: 8 }}>
           <Text style={s.title}>
             How was{' '}
-            <Text style={[s.title, { fontFamily: Font.displayItalic, color: Colors.coral }]}>
+            <Text style={[s.title, { fontStyle: 'italic', color: Colors.coral }]}>
               {pending.gameTitle}
             </Text>
             {'?'}
@@ -194,11 +194,11 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 8 },
   iconBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
 
-  title: { fontFamily: Font.display, fontSize: 26, color: Colors.ink, textAlign: 'center', lineHeight: 32, marginBottom: 4 },
+  title: { fontSize: 26, fontWeight: '800', color: Colors.ink, textAlign: 'center', lineHeight: 32, marginBottom: 4 },
   subtitle: { fontSize: 12, color: Colors.gray500, textAlign: 'center' },
 
   starsBlock: { alignItems: 'center', paddingVertical: 24, borderBottomWidth: 1, borderBottomColor: Colors.gray150, marginHorizontal: 20, marginBottom: 24 },
-  bigNum: { fontFamily: Font.displayItalic, fontSize: 48, color: Colors.coral, lineHeight: 52 },
+  bigNum: { fontSize: 48, fontWeight: '800', fontStyle: 'italic', color: Colors.coral, lineHeight: 52 },
   bigDec: { fontSize: 24, color: Colors.gray300, marginLeft: 2 },
 
   attrTag: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white, width: '47%' },
