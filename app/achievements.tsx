@@ -1,0 +1,29 @@
+import React from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ChevronLeft } from 'lucide-react-native';
+import { Colors, Font } from '@/constants/theme';
+import { useStore } from '@/store/useStore';
+
+export default function AchievementsScreen() {
+  const insets = useSafeAreaInsets();
+  const { userPoints } = useStore();
+
+  return (
+    <View style={{ flex: 1, backgroundColor: Colors.bg }}>
+      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: Colors.gray100, alignItems: 'center', justifyContent: 'center' }}>
+          <ChevronLeft size={18} color={Colors.gray700} strokeWidth={2} />
+        </TouchableOpacity>
+        <Text style={{ fontFamily: Font.display, fontSize: 22, color: Colors.ink, letterSpacing: -0.5 }}>Achievements</Text>
+      </View>
+
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+        <Text style={{ fontSize: 40 }}>🏆</Text>
+        <Text style={{ fontFamily: Font.display, fontSize: 22, color: Colors.ink }}>Coming soon</Text>
+        <Text style={{ fontSize: 13, color: Colors.gray500 }}>You have {userPoints.toLocaleString()} points so far</Text>
+      </View>
+    </View>
+  );
+}
