@@ -112,8 +112,8 @@ function Step1({ sport, setSport }: { sport: string; setSport: (s: string) => vo
   );
 }
 const s1 = StyleSheet.create({
-  tile: { width: '46%', aspectRatio: 1.2, backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.border, borderRadius: 20, padding: 16, justifyContent: 'flex-end' },
-  name: { fontSize: 15, fontWeight: '700', color: Colors.ink },
+  tile: { width: '46%', aspectRatio: 1.05, backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.border, borderRadius: 20, padding: 14, justifyContent: 'flex-end' },
+  name: { fontSize: 14, fontWeight: '700', color: Colors.ink },
 });
 
 // ─── Step 2: Format ───────────────────────────────────────────────────────────
@@ -180,16 +180,17 @@ function Step3({ dateIdx, setDateIdx, timeIdx, setTimeIdx }: any) {
         })}
       </ScrollView>
       <Text style={label}>Time</Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         {TIMES.map((t, i) => {
           const sel = timeIdx === i;
           return (
-            <TouchableOpacity key={t} onPress={() => setTimeIdx(i)} style={[s3.timeChip, sel && s3.timeChipOn]}>
+            <TouchableOpacity key={t} onPress={() => setTimeIdx(i)}
+              style={[s3.timeChip, sel && s3.timeChipOn]}>
               <Text style={[s3.timeTxt, sel && s3.timeTxtOn]}>{t}</Text>
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
     </>
   );
 }
@@ -395,37 +396,45 @@ const s5 = StyleSheet.create({
 
 // ─── Step 6: Preview ──────────────────────────────────────────────────────────
 
+import { Calendar, MapPin as MapPinI, Users, Clock as ClockI } from 'lucide-react-native';
+
 function Step6({ sport, format: fmt, title, venue, dateIdx, timeIdx, playerCount, level }: any) {
   const date = DATES[dateIdx] ?? DATES[0];
   const time = TIMES[timeIdx] ?? TIMES[0];
-  const color = SportColors[sport] ?? Colors.coral;
+
+  const infoGrid = [
+    { Icon: Calendar, label: 'WHEN', value: `${date.day} ${date.month}, ${time}`, sub: '' },
+    { Icon: MapPinI, label: 'WHERE', value: venue || 'TBD', sub: '' },
+    { Icon: Users, label: 'PLAYERS', value: `1 / ${playerCount}`, sub: `${playerCount - 1} spots open` },
+    { Icon: ClockI, label: 'SKILL', value: level, sub: '' },
+  ];
+
   return (
     <>
       <StepHeading step={6} title="Looks good?" sub="Review your game before publishing." />
-      <View style={s6.card}>
-        {/* Header */}
-        <View style={[s6.head, { backgroundColor: color }]}>
+      <View style={s6.shell}>
+        {/* Dark header */}
+        <View style={s6.darkHead}>
+          <View style={s6.blob} />
           <View style={s6.sportTag}>
-            <Text style={{ fontSize: 14 }}>{SportEmoji[sport] ?? '🏅'}</Text>
-            <Text style={s6.sportTagTxt}>{sport} · {fmt}</Text>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.6)' }} />
+            <Text style={s6.sportTagTxt}>{sport || 'Sport'} · {fmt || 'Format'}</Text>
           </View>
           <Text style={s6.gameTitle}>{title || 'Your Game'}</Text>
-          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)' }}>Hosted by You · 4.8 ★</Text>
+          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Hosted by You · 4.8 ★</Text>
         </View>
-        {/* Info rows */}
-        <View style={s6.body}>
-          {[
-            { emoji: '📅', label: 'WHEN', val: date.full, sub: time },
-            { emoji: '📍', label: 'WHERE', val: venue || 'TBD' },
-            { emoji: '👥', label: 'PLAYERS', val: `1 / ${playerCount}`, sub: `${playerCount - 1} spots open` },
-            { emoji: '⭐', label: 'SKILL', val: level },
-          ].map(row => (
-            <View key={row.label} style={s6.row}>
-              <View style={s6.rowIcon}><Text style={{ fontSize: 16 }}>{row.emoji}</Text></View>
+
+        {/* Info grid pulled up over header */}
+        <View style={s6.infoGrid}>
+          {infoGrid.map(({ Icon, label, value, sub }) => (
+            <View key={label} style={s6.infoCell}>
+              <View style={s6.infoIcon}>
+                <Icon size={15} color={Colors.gray600} strokeWidth={1.8} />
+              </View>
               <View style={{ flex: 1 }}>
-                <Text style={s6.rowLabel}>{row.label}</Text>
-                <Text style={s6.rowVal}>{row.val}</Text>
-                {row.sub ? <Text style={s6.rowSub}>{row.sub}</Text> : null}
+                <Text style={s6.infoLabel}>{label}</Text>
+                <Text style={s6.infoVal}>{value}</Text>
+                {!!sub && <Text style={s6.infoSub}>{sub}</Text>}
               </View>
             </View>
           ))}
@@ -435,17 +444,18 @@ function Step6({ sport, format: fmt, title, venue, dateIdx, timeIdx, playerCount
   );
 }
 const s6 = StyleSheet.create({
-  card: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 24, overflow: 'hidden' },
-  head: { padding: 20, paddingBottom: 22 },
-  sportTag: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.2)', alignSelf: 'flex-start', marginBottom: 12 },
-  sportTagTxt: { fontSize: 11, fontWeight: '700', color: Colors.white, letterSpacing: 0.3 },
-  gameTitle: { fontSize: 24, fontWeight: '800', color: Colors.white, letterSpacing: -0.5, marginBottom: 4 },
-  body: { padding: 16, gap: 14 },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  rowIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.gray100, alignItems: 'center', justifyContent: 'center' },
-  rowLabel: { fontSize: 9, fontWeight: '700', color: Colors.gray500, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 2 },
-  rowVal: { fontSize: 14, fontWeight: '600', color: Colors.ink },
-  rowSub: { fontSize: 11, color: Colors.gray500, marginTop: 2 },
+  shell: { backgroundColor: Colors.bg, borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: Colors.border },
+  darkHead: { backgroundColor: Colors.ink, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, overflow: 'hidden' },
+  blob: { position: 'absolute', top: -50, right: -50, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,90,78,0.4)' },
+  sportTag: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: 'rgba(255,90,78,0.25)', borderWidth: 1, borderColor: 'rgba(255,90,78,0.35)', alignSelf: 'flex-start', marginBottom: 10 },
+  sportTagTxt: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.85)', letterSpacing: 0.3 },
+  gameTitle: { fontSize: 26, fontWeight: '800', color: Colors.white, letterSpacing: -0.4, marginBottom: 8, lineHeight: 32 },
+  infoGrid: { marginHorizontal: 14, marginTop: -18, backgroundColor: Colors.white, borderRadius: 18, borderWidth: 1, borderColor: Colors.border, padding: 14, flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  infoCell: { width: '45%', flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  infoIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: Colors.gray100, alignItems: 'center', justifyContent: 'center' },
+  infoLabel: { fontSize: 9, fontWeight: '700', color: Colors.gray500, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 2 },
+  infoVal: { fontSize: 13, fontWeight: '600', color: Colors.ink },
+  infoSub: { fontSize: 10, color: Colors.gray500, marginTop: 1 },
 });
 
 const label = { fontSize: 13, fontWeight: '700' as const, color: Colors.ink, marginBottom: 10 };

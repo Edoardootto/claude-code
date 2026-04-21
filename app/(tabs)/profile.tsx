@@ -9,7 +9,7 @@ import {
   ChevronRight, Edit3, Check, X, Star, Trophy, Bell, Shield, LogOut,
   MapPin, CheckCircle, Settings, ChevronLeft,
 } from 'lucide-react-native';
-import { Colors, MicroStyle, SportEmoji, SportColors, Radius } from '@/constants/theme';
+import { Colors, MicroStyle, SportColors, Radius } from '@/constants/theme';
 import { useStore } from '@/store/useStore';
 
 function Micro({ children, style }: { children: React.ReactNode; style?: object }) {
@@ -178,8 +178,8 @@ export default function ProfileScreen() {
                 const color = SportColors[sp.name] ?? Colors.coral;
                 return (
                   <View key={sp.name} style={p.sportRow}>
-                    <View style={[p.sportIcon, { backgroundColor: color + '18' }]}>
-                      <Text style={{ fontSize: 18 }}>{SportEmoji[sp.name] ?? '🏅'}</Text>
+                    <View style={[p.sportIcon, { backgroundColor: color + '18', justifyContent: 'center', alignItems: 'center' }]}>
+                      <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: color }} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={p.sportName}>{sp.name}</Text>
@@ -212,7 +212,7 @@ export default function ProfileScreen() {
               {allGames.filter(g => g.joined).slice(0, 3).map(g => (
                 <TouchableOpacity key={g.id} style={p.actRow} onPress={() => router.push(`/game/${g.id}` as any)}>
                   <View style={[p.actIcon, { backgroundColor: (SportColors[g.sport] ?? Colors.coral) + '18' }]}>
-                    <Text style={{ fontSize: 16 }}>{SportEmoji[g.sport] ?? '🏅'}</Text>
+                    <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: SportColors[g.sport] ?? Colors.coral }} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={p.actTitle} numberOfLines={1}>{g.title}</Text>

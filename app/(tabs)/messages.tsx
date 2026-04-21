@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Search, X } from 'lucide-react-native';
-import { Colors, Radius } from '@/constants/theme';
+import { Colors, Radius, SportEmoji, SportColors } from '@/constants/theme';
 import { useStore } from '@/store/useStore';
 
 type FilterPill = 'all' | 'unread' | 'friends' | 'groups';
@@ -17,7 +17,7 @@ const PILLS: { key: FilterPill; label: string }[] = [
 ];
 
 export default function MessagesScreen() {
-  const { chatThreads, allGames } = useStore();
+  const { chatThreads, allGames, markChatRead } = useStore();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterPill>('all');
   const [showSearch, setShowSearch] = useState(false);
@@ -109,10 +109,10 @@ export default function MessagesScreen() {
             const isLast = idx === filtered.length - 1;
             return (
               <TouchableOpacity key={thread.id} style={[s.row, !isLast && s.rowBorder]}
-                onPress={() => router.push(`/chat/${thread.id}` as any)} activeOpacity={0.75}>
+                onPress={() => { markChatRead(thread.id); router.push(`/chat/${thread.id}` as any); }} activeOpacity={0.75}>
                 {/* Icon / Avatar */}
-                <View style={[s.avatarWrap, thread.isGroup && s.avatarGroup]}>
-                  <Text style={{ fontSize: 20 }}>{game ? '🏀' : '💬'}</Text>
+                <View style={[s.avatarWrap, thread.isGroup && { backgroundColor: (SportColors[thread.sport ?? ''] ?? Colors.inkSoft) + '22' }]}>
+                  <Text style={{ fontSize: 20 }}>{thread.sport ? (SportEmoji[thread.sport] ?? '🏅') : '💬'}</Text>
                   {thread.isGroup && (
                     <View style={s.groupBadge}>
                       <Text style={{ fontSize: 7, fontWeight: '800', color: Colors.white }}>G</Text>

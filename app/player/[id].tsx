@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Share2, MoreHorizontal, MapPin, Sparkles, CheckCircle } from 'lucide-react-native';
-import { Colors, Font, Radius, MicroStyle } from '@/constants/theme';
+import { Colors, MicroStyle, SportColors, Radius } from '@/constants/theme';
 import { useStore } from '@/store/useStore';
 
 function Micro({ children, style }: { children: React.ReactNode; style?: object }) {
@@ -19,11 +19,23 @@ const REVIEWS = [
 export default function PlayerProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { allPlayers } = useStore();
+  const { allPlayers, friendIds, outgoingRequests, sendFollowRequest } = useStore();
   const user = allPlayers.find((p) => p.id === id) ?? allPlayers[0];
 
+  const isFriend = friendIds.includes(user.id);
+  const isPending = outgoingRequests.includes(user.id);
+
+  const followLabel = isFriend ? 'Friends' : isPending ? 'Requested' : 'Follow';
+  const followStyle = isFriend
+    ? { backgroundColor: Colors.white, borderColor: Colors.border }
+    : isPending
+    ? { backgroundColor: Colors.white, borderColor: Colors.border }
+    : { backgroundColor: Colors.ink, borderColor: Colors.ink };
+  const followTxtColor = isFriend || isPending ? Colors.gray600 : Colors.white;
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: Colors.bg }} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1, backgroundColor: Colors.bg }}
+      contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       {/* Header row */}
       <View style={[s.headerRow, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity style={s.iconBtn} onPress={() => router.back()}>
@@ -52,8 +64,12 @@ export default function PlayerProfileScreen() {
           <Text style={s.location}>{user.location} · 2.1 mi away</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8, width: '100%' }}>
-          <TouchableOpacity style={[s.ctaBtn, { backgroundColor: Colors.ink, flex: 1 }]}>
-            <Text style={[s.ctaBtnTxt, { color: Colors.white }]}>Follow</Text>
+          <TouchableOpacity
+            style={[s.ctaBtn, followStyle, { flex: 1 }]}
+            activeOpacity={0.85}
+            onPress={() => { if (!isFriend && !isPending) sendFollowRequest(user.id); }}
+          >
+            <Text style={[s.ctaBtnTxt, { color: followTxtColor }]}>{followLabel}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[s.ctaBtn, { backgroundColor: Colors.white, flex: 1 }]}>
             <Text style={[s.ctaBtnTxt, { color: Colors.ink }]}>Message</Text>
@@ -69,16 +85,17 @@ export default function PlayerProfileScreen() {
         <View style={s.aiCard}>
           <View style={s.aiCircle1} />
           <View style={s.aiCircle2} />
-
           <View style={s.aiTag}>
             <Sparkles size={10} color={Colors.white} />
             <Micro style={{ color: Colors.white, letterSpacing: 1.2 }}>AI MATCH INSIGHT</Micro>
           </View>
-          <Micro style={{ color: 'rgba(255,255,255,0.7)', marginBottom: 8, marginTop: 4 }}>COMPATIBILITY WITH YOU</Micro>
-
+          <Micro style={{ color: 'rgba(255,255,255,0.7)', marginBottom: 8, marginTop: 4 }}>
+            COMPATIBILITY WITH YOU
+          </Micro>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <Text style={s.aiInsight}>
-              You both play tennis at similar skill, share 3 mutual friends, and prefer mornings. {user.name.split(' ')[0]} has hosted games you'd likely join — she rates well on punctuality and fair play.
+              You both play similar sports, share mutual connections, and prefer similar game times.{' '}
+              {user.name.split(' ')[0]} rates well on punctuality and fair play.
             </Text>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={s.aiScore}>{user.compatibility}</Text>
@@ -96,32 +113,45 @@ export default function PlayerProfileScreen() {
           { val: `${user.showUpRate}%`, label: 'SHOW-UP', italic: false },
         ].map((st, i) => (
           <View key={st.label} style={[s.statCell, i > 0 && s.statCellBorder]}>
-            <Text style={[s.statVal, st.italic && { color: Colors.coral, fontStyle: 'italic' }]}>{st.val}</Text>
+            <Text style={[s.statVal, st.italic && { color: Colors.coral, fontStyle: 'italic' }]}>
+              {st.val}
+            </Text>
             <Micro>{st.label}</Micro>
           </View>
         ))}
       </View>
 
-      {/* Sports */}
+      {/* Bio */}
+      {user.bio && (
+        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+          <Micro style={{ marginBottom: 8 }}>BIO</Micro>
+          <Text style={{ fontSize: 13, color: Colors.gray700, lineHeight: 20 }}>{user.bio}</Text>
+        </View>
+      )}
+
+      {/* Sports — no emoji, colored sport indicator */}
       <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
         <Micro style={{ marginBottom: 10 }}>FAVORITE SPORTS</Micro>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {user.sports.map((sp) => (
-            <View key={sp.name} style={s.sportChip}>
-              <Text style={{ fontSize: 16 }}>
-                {sp.name === 'Tennis' ? '🎾' : sp.name === 'Basketball' ? '🏀' : sp.name === 'Running' ? '🏃' : sp.name === 'Soccer' ? '⚽' : '🏐'}
-              </Text>
-              <Text style={s.sportChipName}>{sp.name}</Text>
-              <View style={s.levelBadge}><Text style={s.levelTxt}>{sp.level.toFixed(1)}</Text></View>
-            </View>
-          ))}
+          {user.sports.map((sp) => {
+            const color = SportColors[sp.name] ?? Colors.coral;
+            return (
+              <View key={sp.name} style={[s.sportChip, { borderColor: color + '40' }]}>
+                <View style={[s.sportDot, { backgroundColor: color }]} />
+                <Text style={s.sportChipName}>{sp.name}</Text>
+                <View style={[s.levelBadge, { backgroundColor: color + '18' }]}>
+                  <Text style={[s.levelTxt, { color }]}>{sp.level.toFixed(1)}</Text>
+                </View>
+              </View>
+            );
+          })}
         </View>
       </View>
 
       {/* Reviews */}
       <View style={{ paddingHorizontal: 20 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <Micro>RECENT REVIEWS</Micro>
+          <Micro>RECENT HOST REVIEWS</Micro>
           <Text style={{ fontSize: 12, fontWeight: '600', color: Colors.coral }}>All · 23</Text>
         </View>
         {REVIEWS.map((rev) => {
@@ -177,10 +207,11 @@ const s = StyleSheet.create({
   statCellBorder: { borderLeftWidth: 1, borderLeftColor: Colors.border },
   statVal: { fontSize: 24, fontWeight: '700', color: Colors.ink, lineHeight: 28, marginBottom: 2 },
 
-  sportChip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 12 },
-  sportChipName: { fontSize: 12, fontWeight: '500', color: Colors.ink },
-  levelBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 999, backgroundColor: Colors.ink },
-  levelTxt: { fontSize: 9, color: Colors.white, fontWeight: '700' },
+  sportChip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: Colors.white, borderWidth: 1, borderRadius: 12 },
+  sportDot: { width: 8, height: 8, borderRadius: 4 },
+  sportChipName: { fontSize: 12, fontWeight: '600', color: Colors.ink },
+  levelBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999 },
+  levelTxt: { fontSize: 10, fontWeight: '700' },
 
   reviewCard: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 18, padding: 14, marginBottom: 8 },
 });

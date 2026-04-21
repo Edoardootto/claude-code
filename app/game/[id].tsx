@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { Image } from 'expo-image';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Share2, Calendar, MapPin, Users, Clock, Wind, Droplets, MessageSquare } from 'lucide-react-native';
+import { ChevronLeft, Share2, Calendar, MapPin, Users, Clock, Wind, Droplets, MessageSquare, Shield } from 'lucide-react-native';
 import { Colors, Font, Radius, MicroStyle, SportEmoji } from '@/constants/theme';
 import { useStore } from '@/store/useStore';
 
@@ -93,6 +93,16 @@ export default function GameDetailScreen() {
         <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
           <Micro style={{ marginBottom: 8 }}>DESCRIPTION</Micro>
           <Text style={s.desc}>{game.description}</Text>
+        </View>
+
+        {/* Safety reminder */}
+        <View style={s.safetyCard}>
+          <View style={s.safetyIcon}>
+            <Shield size={14} color={Colors.gray500} strokeWidth={1.8} />
+          </View>
+          <Text style={s.safetyTxt}>
+            Meet in public, share your location with a friend, and trust your instincts. Stay safe out there.
+          </Text>
         </View>
 
         {/* Weather */}
@@ -186,11 +196,15 @@ const s = StyleSheet.create({
   sportTag: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: 'rgba(255,90,78,0.2)', borderWidth: 1, borderColor: 'rgba(255,90,78,0.3)', alignSelf: 'flex-start', marginBottom: 12 },
   heroTitle: { fontSize: 32, fontWeight: '800', color: Colors.white, lineHeight: 38, letterSpacing: -0.5, marginBottom: 12 },
 
-  infoGrid: { marginHorizontal: 16, marginTop: -20, backgroundColor: Colors.white, borderRadius: Radius.card, borderWidth: 1, borderColor: Colors.border, padding: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 14, zIndex: 10 },
-  infoCell: { width: '45%', flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  infoIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: Colors.gray100, alignItems: 'center', justifyContent: 'center' },
-  infoVal: { fontSize: 12, fontWeight: '600', color: Colors.ink, marginTop: 2 },
-  infoSub: { fontSize: 10, color: Colors.gray500 },
+  infoGrid: { marginHorizontal: 16, marginTop: -20, backgroundColor: Colors.white, borderRadius: Radius.card, borderWidth: 1, borderColor: Colors.border, padding: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 16, zIndex: 10 },
+  infoCell: { width: '45%', flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  infoIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: Colors.gray100, alignItems: 'center', justifyContent: 'center' },
+  infoVal: { fontSize: 13, fontWeight: '700', color: Colors.ink, marginTop: 2 },
+  infoSub: { fontSize: 11, color: Colors.gray500 },
+
+  safetyCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginHorizontal: 20, marginTop: 16, backgroundColor: Colors.gray100, borderRadius: 14, padding: 12 },
+  safetyIcon: { width: 26, height: 26, borderRadius: 8, backgroundColor: Colors.white, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  safetyTxt: { flex: 1, fontSize: 12, color: Colors.gray600, lineHeight: 17 },
 
   desc: { fontSize: 13, color: Colors.gray700, lineHeight: 20 },
 

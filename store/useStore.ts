@@ -45,10 +45,12 @@ export interface Game {
 export interface Activity {
   id: string;
   userId: string;
-  type: 'rated' | 'joined' | 'hosting' | 'badge';
+  type: 'rated' | 'joined' | 'hosting' | 'badge' | 'follow_request' | 'follow_accepted';
   text: string;
   time: string;
   hasBadge?: boolean;
+  gameId?: string;
+  fromId?: string;
 }
 
 export interface PendingRating {
@@ -59,6 +61,7 @@ export interface PendingRating {
   daysAgo: number;
   playerCount: number;
   players: Player[];
+  hostId: string;
   iconColor: 'coral' | 'blue' | 'green';
   isNew?: boolean;
 }
@@ -89,6 +92,19 @@ export interface ChatThread {
   lastMessageTime: string;
   unread: number;
   messages: Message[];
+  sport?: string;
+}
+
+export interface FollowRequest {
+  id: string;
+  fromId: string;
+  timestamp: string;
+}
+
+export interface RatingPayload {
+  hostRating: number;
+  criteria: string[];
+  attended: boolean;
 }
 
 // ─── Seed Data ────────────────────────────────────────────────────────────────
@@ -237,6 +253,7 @@ const CURRENT_USER: Player = {
   verified: true,
   online: true,
   points: 1920,
+  bio: 'Love playing sports and meeting new people. Always up for a good game!',
 };
 
 const SEED_GAMES: Game[] = [
@@ -306,7 +323,6 @@ const SEED_GAMES: Game[] = [
     longitude: -73.7949,
     joined: true,
   },
-  // Map-only games (not joined)
   {
     id: 'game-4',
     sport: 'Basketball',
@@ -420,9 +436,10 @@ const SEED_GAMES: Game[] = [
 ];
 
 const ACTIVITIES: Activity[] = [
-  { id: 'a1', userId: 'maya', type: 'rated', text: 'Maya rated you 5 stars after Friday\'s match', time: '2 hours ago', hasBadge: true },
-  { id: 'a2', userId: 'jordan', type: 'joined', text: 'Jordan joined your Sunset Court Pickup', time: '4 hours ago' },
-  { id: 'a3', userId: 'sam', type: 'hosting', text: 'Sam is hosting a new soccer game nearby', time: 'Yesterday' },
+  { id: 'a0', userId: 'priya', type: 'follow_request', text: 'Priya S. wants to follow you', time: '2 hours ago', fromId: 'priya' },
+  { id: 'a1', userId: 'maya', type: 'rated', text: 'Maya rated you 5 stars after Friday\'s match', time: '3 hours ago', hasBadge: true },
+  { id: 'a2', userId: 'jordan', type: 'joined', text: 'Jordan joined your Riverside Court pickup', time: '4 hours ago', gameId: 'game-1' },
+  { id: 'a3', userId: 'sam', type: 'hosting', text: 'Sam is hosting a new soccer game nearby', time: 'Yesterday', gameId: 'game-2' },
   { id: 'a4', userId: 'priya', type: 'badge', text: 'Priya unlocked the Regular badge · 10 games', time: 'Yesterday' },
 ];
 
@@ -435,6 +452,7 @@ const INITIAL_PENDING: PendingRating[] = [
     daysAgo: 2,
     playerCount: 7,
     players: PLAYERS.slice(0, 7),
+    hostId: 'jordan',
     iconColor: 'coral',
     isNew: true,
   },
@@ -446,6 +464,7 @@ const INITIAL_PENDING: PendingRating[] = [
     daysAgo: 4,
     playerCount: 3,
     players: PLAYERS.slice(1, 4),
+    hostId: 'maya',
     iconColor: 'blue',
     isNew: false,
   },
@@ -463,16 +482,37 @@ const INITIAL_THREADS: ChatThread[] = [
     name: 'Riverside Court pickup',
     gameId: 'game-1',
     isGroup: true,
+    sport: 'Basketball',
     participants: ['alex', 'jordan', 'maya'],
-    lastMessage: 'Jordan: See you at 6:30! 🏀',
+    lastMessage: 'Jordan: See you at 6:30!',
     lastMessageTime: '2h ago',
     unread: 2,
     messages: [
       { id: 'm1', senderId: 'jordan', text: 'Lineup confirmed for tonight.', timestamp: '4:00 PM' },
-      { id: 'm2', senderId: 'maya', text: 'I\'ll bring the water bottles.', timestamp: '4:15 PM' },
-      { id: 'm3', senderId: 'jordan', text: 'See you at 6:30! 🏀', timestamp: '4:20 PM' },
+      { id: 'm2', senderId: 'maya', text: "I'll bring the water bottles.", timestamp: '4:15 PM' },
+      { id: 'm3', senderId: 'jordan', text: 'See you at 6:30!', timestamp: '4:20 PM' },
     ],
   },
+  {
+    id: 'thread-dm-maya',
+    name: 'Maya Rivera',
+    isGroup: false,
+    participants: ['alex', 'maya'],
+    lastMessage: 'Maya: Are you coming Tuesday?',
+    lastMessageTime: '1d ago',
+    unread: 1,
+    messages: [
+      { id: 'dm1', senderId: 'maya', text: 'Hey! Great game last week.', timestamp: '2:00 PM' },
+      { id: 'dm2', senderId: 'alex', text: 'Yeah it was fun! Same time next week?', timestamp: '2:10 PM' },
+      { id: 'dm3', senderId: 'maya', text: 'Are you coming Tuesday?', timestamp: 'Yesterday' },
+    ],
+  },
+];
+
+// Initial follow data
+const INITIAL_FRIEND_IDS = ['jordan', 'maya', 'sam'];
+const INITIAL_INCOMING: FollowRequest[] = [
+  { id: 'req1', fromId: 'priya', timestamp: '2h ago' },
 ];
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -483,13 +523,6 @@ export const showToast = (msg: string, type: 'success' | 'info' = 'success') => 
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
-export interface RatingPayload {
-  overall: number;
-  attributes: string[];
-  attended: boolean;
-  playerRatings: Record<string, number>;
-}
-
 interface AppState {
   currentUser: Player;
   allPlayers: Player[];
@@ -499,12 +532,19 @@ interface AppState {
   pastRatings: PastRating[];
   chatThreads: ChatThread[];
   userPoints: number;
+  friendIds: string[];
+  outgoingRequests: string[];
+  incomingRequests: FollowRequest[];
 
   joinGame: (gameId: string) => void;
   leaveGame: (gameId: string) => void;
   submitRating: (gameId: string, payload: RatingPayload) => void;
   createGame: (data: Partial<Game>) => string;
   sendMessage: (threadId: string, text: string) => void;
+  markChatRead: (threadId: string) => void;
+  sendFollowRequest: (targetId: string) => void;
+  acceptFollowRequest: (fromId: string) => void;
+  declineFollowRequest: (fromId: string) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -516,15 +556,56 @@ export const useStore = create<AppState>((set, get) => ({
   pastRatings: INITIAL_PAST,
   chatThreads: INITIAL_THREADS,
   userPoints: 1920,
+  friendIds: INITIAL_FRIEND_IDS,
+  outgoingRequests: [],
+  incomingRequests: INITIAL_INCOMING,
 
   joinGame: (gameId) => {
     const game = get().allGames.find((g) => g.id === gameId);
     if (!game || game.joined) return;
+
     set((s) => ({
       allGames: s.allGames.map((g) =>
         g.id === gameId ? { ...g, joined: true, playersJoined: g.playersJoined + 1 } : g
       ),
     }));
+
+    // Create game chat thread if it doesn't exist
+    const existingThread = get().chatThreads.find(t => t.gameId === gameId);
+    if (!existingThread) {
+      const newThread: ChatThread = {
+        id: `thread-${gameId}`,
+        name: game.title,
+        gameId,
+        isGroup: true,
+        sport: game.sport,
+        participants: ['alex', ...game.players.slice(0, 5).map(p => p.id)],
+        lastMessage: 'You joined the game',
+        lastMessageTime: 'Now',
+        unread: 0,
+        messages: [
+          {
+            id: `m-sys-${Date.now()}`,
+            senderId: 'system',
+            text: `You joined ${game.title}! Say hello to your teammates.`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ],
+      };
+      set((s) => ({ chatThreads: [newThread, ...s.chatThreads] }));
+    }
+
+    // Add to activity feed
+    const act: Activity = {
+      id: `act-join-${Date.now()}`,
+      userId: 'alex',
+      type: 'joined',
+      text: `You joined ${game.title}`,
+      time: 'Just now',
+      gameId,
+    };
+    set((s) => ({ activities: [act, ...s.activities] }));
+
     showToast("You're in! 🎉");
   },
 
@@ -548,7 +629,7 @@ export const useStore = create<AppState>((set, get) => ({
       gameTitle: pending.gameTitle,
       playerCount: pending.playerCount,
       daysAgo: pending.daysAgo,
-      stars: payload.overall,
+      stars: payload.hostRating,
       sport: pending.sport,
     };
 
@@ -584,16 +665,53 @@ export const useStore = create<AppState>((set, get) => ({
       longitude: -74.0060,
       joined: true,
     };
+
+    const chatThread: ChatThread = {
+      id: `thread-${id}`,
+      name: newGame.title,
+      gameId: id,
+      isGroup: true,
+      sport: newGame.sport,
+      participants: ['alex'],
+      lastMessage: 'Game created',
+      lastMessageTime: 'Now',
+      unread: 0,
+      messages: [
+        {
+          id: `m-sys-${Date.now()}`,
+          senderId: 'system',
+          text: `${newGame.title} is now live! Share to invite players.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ],
+    };
+
+    const act: Activity = {
+      id: `act-host-${Date.now()}`,
+      userId: 'alex',
+      type: 'hosting',
+      text: `You created ${newGame.title}`,
+      time: 'Just now',
+      gameId: id,
+    };
+
     set((s) => ({
       allGames: [...s.allGames, newGame],
       userPoints: s.userPoints + 50,
+      chatThreads: [chatThread, ...s.chatThreads],
+      activities: [act, ...s.activities],
     }));
     showToast('Your game is live 🎉');
     return id;
   },
 
   sendMessage: (threadId, text) => {
-    const msg: Message = { id: `m-${Date.now()}`, senderId: 'alex', text, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+    const msg: Message = {
+      id: `m-${Date.now()}`,
+      senderId: 'alex',
+      text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
     set((s) => ({
       chatThreads: s.chatThreads.map((t) =>
         t.id === threadId
@@ -601,5 +719,48 @@ export const useStore = create<AppState>((set, get) => ({
           : t
       ),
     }));
+  },
+
+  markChatRead: (threadId) => {
+    set((s) => ({
+      chatThreads: s.chatThreads.map((t) => t.id === threadId ? { ...t, unread: 0 } : t),
+    }));
+  },
+
+  sendFollowRequest: (targetId) => {
+    if (get().outgoingRequests.includes(targetId)) return;
+    const player = get().allPlayers.find(p => p.id === targetId);
+    if (!player) return;
+    set((s) => ({ outgoingRequests: [...s.outgoingRequests, targetId] }));
+    showToast(`Request sent to ${player.name}`);
+  },
+
+  acceptFollowRequest: (fromId) => {
+    const player = get().allPlayers.find(p => p.id === fromId);
+    if (!player) return;
+    const act: Activity = {
+      id: `act-accept-${Date.now()}`,
+      userId: fromId,
+      type: 'follow_accepted',
+      text: `You and ${player.name} are now friends`,
+      time: 'Just now',
+      fromId,
+    };
+    set((s) => ({
+      friendIds: [...s.friendIds, fromId],
+      incomingRequests: s.incomingRequests.filter(r => r.fromId !== fromId),
+      activities: s.activities.filter(a => !(a.type === 'follow_request' && a.fromId === fromId)),
+      // Add accepted activity
+    }));
+    set((s) => ({ activities: [act, ...s.activities] }));
+    showToast(`You and ${player.name} are now friends! 🎉`);
+  },
+
+  declineFollowRequest: (fromId) => {
+    set((s) => ({
+      incomingRequests: s.incomingRequests.filter(r => r.fromId !== fromId),
+      activities: s.activities.filter(a => !(a.type === 'follow_request' && a.fromId === fromId)),
+    }));
+    showToast('Request declined', 'info');
   },
 }));

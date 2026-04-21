@@ -4,36 +4,50 @@ import { View, Text, Platform, ViewStyle } from 'react-native';
 import { Home, MapPin, MessageSquare, User } from 'lucide-react-native';
 import { Colors } from '@/constants/theme';
 
-function TabIcon({ Icon, label, focused }: { Icon: React.ElementType; label: string; focused: boolean }) {
+function TabIcon({ Icon, focused }: { Icon: React.ElementType; focused: boolean }) {
   return (
-    <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 4 }}>
-      <View style={[
-        { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20, alignItems: 'center', gap: 2 },
-        focused && { backgroundColor: Colors.ink },
-      ]}>
-        <Icon size={18} color={focused ? Colors.white : Colors.gray400} strokeWidth={focused ? 2.5 : 1.8} />
-        <Text style={{
-          fontSize: 9,
-          letterSpacing: 0.8,
-          textTransform: 'uppercase',
-          color: focused ? Colors.white : Colors.gray400,
-          fontWeight: focused ? '700' : '400',
-        }}>{label}</Text>
-      </View>
+    <View style={{
+      width: 44, height: 44, borderRadius: 22,
+      alignItems: 'center', justifyContent: 'center',
+      backgroundColor: focused ? Colors.ink : 'transparent',
+    }}>
+      <Icon
+        size={20}
+        color={focused ? Colors.white : Colors.gray400}
+        strokeWidth={focused ? 2.5 : 1.8}
+      />
     </View>
   );
 }
 
 const fabStyle: ViewStyle = {
-  width: 46, height: 46, borderRadius: 14,
+  width: 46, height: 46, borderRadius: 23,
   backgroundColor: Colors.ink,
   alignItems: 'center', justifyContent: 'center',
-  marginBottom: 6,
   shadowColor: Colors.coral,
   shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.35,
+  shadowOpacity: 0.4,
   shadowRadius: 10,
   elevation: 8,
+};
+
+const floatingTabStyle: ViewStyle = {
+  position: 'absolute',
+  bottom: Platform.OS === 'ios' ? 24 : 16,
+  left: 20,
+  right: 20,
+  height: 64,
+  borderRadius: 999,
+  backgroundColor: 'rgba(255,255,255,0.92)',
+  borderWidth: 1,
+  borderColor: 'rgba(220,220,220,0.5)',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 8 },
+  shadowOpacity: 0.14,
+  shadowRadius: 24,
+  elevation: 14,
+  paddingBottom: 0,
+  paddingTop: 0,
 };
 
 export default function TabLayout() {
@@ -41,38 +55,23 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          position: 'absolute',
-          bottom: Platform.OS === 'ios' ? 24 : 16,
-          left: 16,
-          right: 16,
-          height: 64,
-          borderRadius: 999,
-          backgroundColor: 'rgba(255,255,255,0.85)',
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.6)',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.12,
-          shadowRadius: 20,
-          elevation: 12,
-          paddingBottom: 0,
-          paddingTop: 0,
-        },
         tabBarShowLabel: false,
+        tabBarStyle: floatingTabStyle,
       }}
     >
       <Tabs.Screen
         name="index"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon Icon={Home} label="HOME" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon Icon={Home} focused={focused} /> }}
       />
       <Tabs.Screen
         name="games"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon Icon={MapPin} label="MAP" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon Icon={MapPin} focused={focused} /> }}
       />
       <Tabs.Screen
         name="create"
         options={{
+          // Hide bottom nav during create flow so buttons aren't covered
+          tabBarStyle: { display: 'none' },
           tabBarIcon: () => (
             <View style={fabStyle}>
               <Text style={{ fontSize: 26, color: Colors.white, lineHeight: 30, marginTop: -2 }}>+</Text>
@@ -82,11 +81,11 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="messages"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon Icon={MessageSquare} label="CHATS" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon Icon={MessageSquare} focused={focused} /> }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon Icon={User} label="ME" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon Icon={User} focused={focused} /> }}
       />
       <Tabs.Screen name="explore" options={{ href: null }} />
     </Tabs>

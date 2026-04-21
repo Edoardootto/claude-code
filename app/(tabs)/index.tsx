@@ -4,7 +4,10 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Search, Bell, Clock, ChevronRight, X, CheckCircle, MapPin, Sparkles, SlidersHorizontal } from 'lucide-react-native';
+import {
+  Search, Bell, Clock, ChevronRight, X, CheckCircle, MapPin, Sparkles, SlidersHorizontal,
+  UserCheck, UserPlus,
+} from 'lucide-react-native';
 import { Colors, Font, Radius, SportEmoji, MicroStyle, SportColors } from '@/constants/theme';
 import { useStore } from '@/store/useStore';
 
@@ -59,7 +62,7 @@ function StreakCard() {
 }
 
 function MyGamesTab() {
-  const { allGames, allPlayers, activities } = useStore();
+  const { allGames, allPlayers, activities, acceptFollowRequest, declineFollowRequest } = useStore();
   const joined = allGames.filter((g) => g.joined);
 
   return (
@@ -75,7 +78,8 @@ function MyGamesTab() {
         const spots = game.playersMax - game.playersJoined;
         const urgent = spots <= 2;
         return (
-          <TouchableOpacity key={game.id} style={s.gameCard} onPress={() => router.push(`/game/${game.id}` as any)} activeOpacity={0.8}>
+          <TouchableOpacity key={game.id} style={s.gameCard}
+            onPress={() => router.push(`/game/${game.id}` as any)} activeOpacity={0.8}>
             <View style={[s.dateChip, { backgroundColor: i === 0 ? Colors.coralSoft : Colors.gray100 }]}>
               <Text style={s.dateDay}>{game.dateDay}</Text>
               <Micro>{game.dateMonth}</Micro>
@@ -113,19 +117,54 @@ function MyGamesTab() {
         const user = allPlayers.find((u) => u.id === act.userId);
         const name = user?.name ?? '';
         const rest = act.text.startsWith(name) ? act.text.slice(name.length).trim() : act.text;
+        const isFollowReq = act.type === 'follow_request';
+        const isNavigable = act.gameId && (act.type === 'joined' || act.type === 'hosting');
+
         return (
-          <View key={act.id} style={s.actRow}>
+          <TouchableOpacity
+            key={act.id}
+            style={s.actRow}
+            onPress={() => {
+              if (isNavigable) router.push(`/game/${act.gameId}` as any);
+              else if (act.fromId && !isFollowReq) router.push(`/player/${act.fromId}` as any);
+            }}
+            activeOpacity={isNavigable || (act.fromId && !isFollowReq) ? 0.75 : 1}
+          >
             <View style={{ position: 'relative' }}>
-              <Avatar uri={user?.avatar ?? ''} size={36} />
+              <Avatar uri={user?.avatar ?? ''} size={38} />
               {act.hasBadge && (
                 <View style={s.actBadge}><Text style={{ fontSize: 8, color: Colors.white }}>★</Text></View>
               )}
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.actText}><Text style={{ fontWeight: '700' }}>{name}</Text> {rest}</Text>
+              <Text style={s.actText}>
+                <Text style={{ fontWeight: '700' }}>{name}</Text>{' '}{rest}
+              </Text>
               <Text style={s.actTime}>{act.time}</Text>
+              {isFollowReq && act.fromId && (
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                  <TouchableOpacity
+                    style={s.acceptBtn}
+                    onPress={() => acceptFollowRequest(act.fromId!)}
+                    activeOpacity={0.8}
+                  >
+                    <UserCheck size={12} color={Colors.white} strokeWidth={2.5} />
+                    <Text style={s.acceptBtnTxt}>Accept</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={s.declineBtn}
+                    onPress={() => declineFollowRequest(act.fromId!)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={s.declineBtnTxt}>Decline</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
-          </View>
+            {isNavigable && (
+              <ChevronRight size={14} color={Colors.gray400} strokeWidth={2} />
+            )}
+          </TouchableOpacity>
         );
       })}
     </>
@@ -138,7 +177,6 @@ function RatingsTab() {
   const { pendingRatings, pastRatings } = useStore();
   return (
     <>
-      {/* Light rep card */}
       <View style={[s.repCard, { marginHorizontal: 20, marginBottom: 20 }]}>
         <View>
           <Micro style={{ marginBottom: 4 }}>YOUR REPUTATION</Micro>
@@ -151,7 +189,7 @@ function RatingsTab() {
         <View style={{ alignItems: 'flex-end', gap: 4 }}>
           <Text style={s.repStat}>17 rated</Text>
           <Text style={s.repStat}>92% show-up</Text>
-          <Text style={[s.repStat, { color: Colors.coral }]}>4 pending</Text>
+          <Text style={[s.repStat, { color: Colors.coral }]}>{pendingRatings.length} pending</Text>
         </View>
       </View>
 
@@ -161,10 +199,12 @@ function RatingsTab() {
       </View>
 
       {pendingRatings.map((pr) => (
-        <TouchableOpacity key={pr.gameId} style={s.pendCard} onPress={() => router.push(`/rate/${pr.gameId}` as any)} activeOpacity={0.8}>
+        <TouchableOpacity key={pr.gameId} style={s.pendCard}
+          onPress={() => router.push(`/rate/${pr.gameId}` as any)} activeOpacity={0.8}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
             <View style={[s.sportTile, {
-              backgroundColor: pr.iconColor === 'coral' ? Colors.coralSoft : pr.iconColor === 'blue' ? '#EFF6FF' : '#ECFDF5',
+              backgroundColor: pr.iconColor === 'coral' ? Colors.coralSoft
+                : pr.iconColor === 'blue' ? '#EFF6FF' : '#ECFDF5',
             }]}>
               <Text style={{ fontSize: 22 }}>{SportEmoji[pr.sport] ?? '🏅'}</Text>
             </View>
@@ -173,16 +213,21 @@ function RatingsTab() {
               <Text style={s.pendMeta}>{pr.location} · {pr.daysAgo}d ago</Text>
             </View>
             {pr.isNew && (
-              <View style={s.newBadge}><Text style={{ fontSize: 10, color: Colors.coral, fontWeight: '700' }}>NEW</Text></View>
+              <View style={s.newBadge}>
+                <Text style={{ fontSize: 10, color: Colors.coral, fontWeight: '700' }}>NEW</Text>
+              </View>
             )}
           </View>
           <View style={s.pendBottom}>
             <View style={{ flexDirection: 'row' }}>
               {pr.players.slice(0, 4).map((p, i) => (
-                <Image key={p.id} source={{ uri: p.avatar }} style={[s.stackAv, { marginLeft: i > 0 ? -8 : 0 }]} contentFit="cover" />
+                <Image key={p.id} source={{ uri: p.avatar }}
+                  style={[s.stackAv, { marginLeft: i > 0 ? -8 : 0 }]} contentFit="cover" />
               ))}
             </View>
-            <Text style={s.pendRateText}>Rate <Text style={{ color: Colors.ink, fontWeight: '700' }}>{pr.playerCount} players</Text> & host</Text>
+            <Text style={s.pendRateText}>
+              Rate <Text style={{ color: Colors.ink, fontWeight: '700' }}>the host</Text>
+            </Text>
             <ChevronRight size={16} color={Colors.gray400} strokeWidth={2} />
           </View>
         </TouchableOpacity>
@@ -200,7 +245,7 @@ function RatingsTab() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={s.pastTitle}>{pr.gameTitle}</Text>
-            <Text style={s.pastMeta}>Rated {pr.playerCount} players · {pr.daysAgo}d ago</Text>
+            <Text style={s.pastMeta}>{pr.playerCount} players · {pr.daysAgo}d ago</Text>
           </View>
           <StarRow rating={pr.stars} size={12} />
         </View>
@@ -224,25 +269,30 @@ const LEADERBOARD = [
 const RANK_COLORS: Record<number, string> = { 1: '#D4A017', 2: '#8E8E93', 3: '#CD7F32' };
 
 function FriendsSubTab({ searchQuery }: { searchQuery: string }) {
-  const { allPlayers } = useStore();
+  const { allPlayers, friendIds } = useStore();
 
-  const filtered = allPlayers.filter(p =>
-    !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.location.toLowerCase().includes(searchQuery.toLowerCase())
+  const friends = allPlayers.filter(p => friendIds.includes(p.id));
+  const filtered = friends.filter(p =>
+    !searchQuery ||
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <>
-      {/* Friends list */}
       <View style={s.sectionRow}>
         <Micro>YOUR FRIENDS · {filtered.length}</Micro>
       </View>
       {filtered.length === 0 ? (
         <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-          <Text style={{ fontSize: 13, color: Colors.gray500 }}>No friends match</Text>
+          <Text style={{ fontSize: 13, color: Colors.gray500 }}>
+            {searchQuery ? 'No friends match' : 'No friends yet'}
+          </Text>
         </View>
       ) : (
         filtered.map((f) => (
-          <TouchableOpacity key={f.id} style={s.friendRow} onPress={() => router.push(`/player/${f.id}` as any)} activeOpacity={0.8}>
+          <TouchableOpacity key={f.id} style={s.friendRow}
+            onPress={() => router.push(`/player/${f.id}` as any)} activeOpacity={0.8}>
             <View style={{ position: 'relative' }}>
               <Avatar uri={f.avatar} size={46} />
               {f.online && <View style={s.onlineDot} />}
@@ -262,9 +312,9 @@ function FriendsSubTab({ searchQuery }: { searchQuery: string }) {
               <View style={s.compatPill}>
                 <Text style={s.compatTxt}>{f.compatibility ?? 80}%</Text>
               </View>
-              <TouchableOpacity style={s.followBtnSm}>
-                <Text style={s.followBtnSmTxt}>Following</Text>
-              </TouchableOpacity>
+              <View style={s.followingTag}>
+                <Text style={s.followingTagTxt}>Friends</Text>
+              </View>
             </View>
           </TouchableOpacity>
         ))
@@ -274,31 +324,38 @@ function FriendsSubTab({ searchQuery }: { searchQuery: string }) {
 }
 
 function DiscoverSubTab({ searchQuery }: { searchQuery: string }) {
-  const { allPlayers } = useStore();
+  const { allPlayers, friendIds, outgoingRequests, sendFollowRequest } = useStore();
+
   const list = allPlayers.filter(u =>
-    !searchQuery || u.name.toLowerCase().includes(searchQuery.toLowerCase())
+    u.id !== 'alex' &&
+    !friendIds.includes(u.id) &&
+    (!searchQuery || u.name.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
     <>
-      {/* Nearby horizontal strip */}
+      {/* Nearby strip */}
       <View style={s.sectionRow}>
         <Micro>NEARBY NOW</Micro>
         <Text style={s.link}>Map view</Text>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}>
-        {allPlayers.filter(u => u.online).map((u) => (
-          <TouchableOpacity key={u.id} style={s.nearbyCard} onPress={() => router.push(`/player/${u.id}` as any)}>
-            <View style={{ position: 'relative', marginBottom: 6 }}>
-              <Avatar uri={u.avatar} size={52} />
-              <View style={s.onlineDot} />
-            </View>
-            <Text style={s.nearbyName}>{u.name.split(' ')[0]}</Text>
-            <View style={s.nearbyCompat}>
-              <Text style={s.nearbyCompatTxt}>{u.compatibility ?? 80}%</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}
+        style={{ marginBottom: 20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}>
+        {allPlayers
+          .filter(u => u.online && u.id !== 'alex' && !friendIds.includes(u.id))
+          .map((u) => (
+            <TouchableOpacity key={u.id} style={s.nearbyCard}
+              onPress={() => router.push(`/player/${u.id}` as any)}>
+              <View style={{ position: 'relative', marginBottom: 6 }}>
+                <Avatar uri={u.avatar} size={52} />
+                <View style={s.onlineDot} />
+              </View>
+              <Text style={s.nearbyName}>{u.name.split(' ')[0]}</Text>
+              <View style={s.nearbyCompat}>
+                <Text style={s.nearbyCompatTxt}>{u.compatibility ?? 80}%</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
       </ScrollView>
 
       {/* Discover list */}
@@ -307,8 +364,10 @@ function DiscoverSubTab({ searchQuery }: { searchQuery: string }) {
       </View>
       {list.map((u) => {
         const color = SportColors[u.sports[0]?.name] ?? Colors.coral;
+        const isPending = outgoingRequests.includes(u.id);
         return (
-          <TouchableOpacity key={u.id} style={s.discoverRow} onPress={() => router.push(`/player/${u.id}` as any)} activeOpacity={0.8}>
+          <TouchableOpacity key={u.id} style={s.discoverRow}
+            onPress={() => router.push(`/player/${u.id}` as any)} activeOpacity={0.8}>
             <View style={{ position: 'relative' }}>
               <Avatar uri={u.avatar} size={50} />
               {u.online && <View style={s.onlineDot} />}
@@ -329,8 +388,16 @@ function DiscoverSubTab({ searchQuery }: { searchQuery: string }) {
                 <Sparkles size={8} color={color} />
                 <Text style={[s.compatBadgeTxt, { color }]}>{u.compatibility ?? 80}%</Text>
               </View>
-              <TouchableOpacity style={s.followBtn}>
-                <Text style={s.followBtnTxt}>+ Follow</Text>
+              <TouchableOpacity
+                style={isPending ? s.requestedBtn : s.followBtn}
+                onPress={(e) => { e.stopPropagation(); if (!isPending) sendFollowRequest(u.id); }}
+                activeOpacity={0.8}
+              >
+                {isPending ? (
+                  <Text style={s.requestedBtnTxt}>Requested</Text>
+                ) : (
+                  <Text style={s.followBtnTxt}>+ Follow</Text>
+                )}
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -363,20 +430,17 @@ function LeaderboardSubTab() {
 
   return (
     <View style={{ paddingHorizontal: 20 }}>
-      {/* Header */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <Text style={{ fontSize: 22, fontWeight: '800', color: Colors.ink }}>Top players</Text>
         <View style={s.leaderBadge}><Text style={s.leaderBadgeTxt}>APRIL</Text></View>
       </View>
 
-      {/* Podium: 2nd left, 1st center, 3rd right */}
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 0 }}>
         <PodiumPeg row={top3[1]} pedHeight={84} allPlayers={allPlayers} />
         <PodiumPeg row={top3[0]} pedHeight={116} allPlayers={allPlayers} />
         <PodiumPeg row={top3[2]} pedHeight={60} allPlayers={allPlayers} />
       </View>
 
-      {/* Rest of list */}
       <View style={[s.leaderCard, { marginTop: 12 }]}>
         {rest.map((row, i) => {
           const user = allPlayers.find((u: any) => u.id === row.userId);
@@ -404,7 +468,6 @@ function FriendsTab() {
   const [sub, setSub] = useState<'friends' | 'discover' | 'leaderboard'>('friends');
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
-  const { allPlayers } = useStore();
 
   return (
     <>
@@ -413,7 +476,8 @@ function FriendsTab() {
         {showSearch ? (
           <View style={s.friendSearchBar}>
             <Search size={14} color={Colors.gray400} strokeWidth={2} />
-            <TextInput style={s.friendSearchInput} placeholder="Search people..." placeholderTextColor={Colors.gray400} value={search} onChangeText={setSearch} autoFocus />
+            <TextInput style={s.friendSearchInput} placeholder="Search people..."
+              placeholderTextColor={Colors.gray400} value={search} onChangeText={setSearch} autoFocus />
             <TouchableOpacity onPress={() => { setShowSearch(false); setSearch(''); }}>
               <X size={14} color={Colors.gray400} strokeWidth={2.5} />
             </TouchableOpacity>
@@ -431,7 +495,7 @@ function FriendsTab() {
         {(['friends', 'discover', 'leaderboard'] as const).map((t) => (
           <TouchableOpacity key={t} onPress={() => setSub(t)} style={s.innerTabItem}>
             <Text style={[s.innerTabTxt, sub === t && s.innerTabActive]}>
-              {t === 'friends' ? 'Friends' : t.charAt(0).toUpperCase() + t.slice(1)}
+              {t.charAt(0).toUpperCase() + t.slice(1)}
             </Text>
             {sub === t && <View style={s.innerUnderline} />}
           </TouchableOpacity>
@@ -473,14 +537,18 @@ export default function FeedScreen() {
         </View>
 
         {/* Pills */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
-          {[{ key: 'games', label: 'My Games' }, { key: 'ratings', label: 'Ratings' }, { key: 'friends', label: 'Friends' }].map((p) => (
-            <TouchableOpacity
-              key={p.key}
-              onPress={() => setTab(p.key as any)}
-              style={[s.navPill, tab === p.key ? s.navPillActive : s.navPillInactive]}
-            >
-              <Text style={[s.navPillTxt, tab === p.key ? s.navPillTxtActive : s.navPillTxtInactive]}>{p.label}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}
+          style={{ marginBottom: 20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
+          {[
+            { key: 'games', label: 'My Games' },
+            { key: 'ratings', label: 'Ratings' },
+            { key: 'friends', label: 'Friends' },
+          ].map((p) => (
+            <TouchableOpacity key={p.key} onPress={() => setTab(p.key as any)}
+              style={[s.navPill, tab === p.key ? s.navPillActive : s.navPillInactive]}>
+              <Text style={[s.navPillTxt, tab === p.key ? s.navPillTxtActive : s.navPillTxtInactive]}>
+                {p.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -497,7 +565,7 @@ export default function FeedScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
-  micro: { ...MicroStyle } as any,
+  micro: { fontSize: 10, letterSpacing: 1.3, textTransform: 'uppercase', color: Colors.gray500 } as any,
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
   greeting: { fontSize: 28, fontWeight: '800', color: Colors.ink, letterSpacing: -0.6 },
@@ -531,10 +599,14 @@ const s = StyleSheet.create({
   pulseDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.coral },
   spotText: { fontSize: 11, fontWeight: '600' },
 
-  actRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingHorizontal: 20, paddingVertical: 10 },
+  actRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingHorizontal: 20, paddingVertical: 12 },
   actBadge: { position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: Colors.coral, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.bg },
   actText: { fontSize: 13, color: Colors.ink, lineHeight: 18 },
   actTime: { fontSize: 11, color: Colors.gray500, marginTop: 2 },
+  acceptBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, backgroundColor: Colors.ink },
+  acceptBtnTxt: { fontSize: 12, fontWeight: '600', color: Colors.white },
+  declineBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
+  declineBtnTxt: { fontSize: 12, fontWeight: '500', color: Colors.gray600 },
 
   repCard: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.card, padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   repNum: { fontSize: 44, fontWeight: '800', color: Colors.ink, lineHeight: 48 },
@@ -567,7 +639,6 @@ const s = StyleSheet.create({
   friendSearchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.coral + '60', borderRadius: 14, height: 42, paddingHorizontal: 12 },
   friendSearchInput: { flex: 1, fontSize: 13, color: Colors.ink },
 
-  // Friends list row
   friendRow: { marginHorizontal: 20, marginBottom: 10, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 18, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   onlineDot: { position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: 6, backgroundColor: Colors.green, borderWidth: 2, borderColor: Colors.white },
   friendName: { fontSize: 14, fontWeight: '700', color: Colors.ink },
@@ -575,16 +646,14 @@ const s = StyleSheet.create({
   friendMeta: { fontSize: 10, color: Colors.gray400 },
   compatPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: Colors.coralSoft },
   compatTxt: { fontSize: 10, fontWeight: '800', color: Colors.coral },
-  followBtnSm: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
-  followBtnSmTxt: { fontSize: 10, fontWeight: '600', color: Colors.gray600 },
+  followingTag: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
+  followingTagTxt: { fontSize: 10, fontWeight: '600', color: Colors.gray600 },
 
-  // Nearby strip
   nearbyCard: { width: 80, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 18, padding: 10, alignItems: 'center' },
   nearbyName: { fontSize: 10, fontWeight: '700', color: Colors.ink, textAlign: 'center', marginBottom: 4 },
   nearbyCompat: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 999, backgroundColor: Colors.coralSoft },
   nearbyCompatTxt: { fontSize: 9, fontWeight: '800', color: Colors.coral },
 
-  // Discover list
   discoverRow: { marginHorizontal: 20, marginBottom: 10, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: 18, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   discoverName: { fontSize: 14, fontWeight: '700', color: Colors.ink },
   discoverSports: { fontSize: 11, color: Colors.gray500 },
@@ -593,6 +662,8 @@ const s = StyleSheet.create({
   compatBadgeTxt: { fontSize: 11, fontWeight: '800' },
   followBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: Colors.ink },
   followBtnTxt: { fontSize: 11, fontWeight: '700', color: Colors.white },
+  requestedBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
+  requestedBtnTxt: { fontSize: 11, fontWeight: '600', color: Colors.gray500 },
 
   leaderCard: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.card, overflow: 'hidden' },
   leaderBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: Colors.gray100 },
